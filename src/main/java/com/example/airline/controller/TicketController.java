@@ -14,7 +14,7 @@ public class TicketController {
     @Autowired
     private TicketService ticketService;
 
-    @PostMapping
+    @PostMapping("/add")
     public Ticket bookTicket(@RequestBody Ticket ticket) {
         return ticketService.bookTicket(ticket);
     }

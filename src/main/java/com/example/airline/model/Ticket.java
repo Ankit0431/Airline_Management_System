@@ -15,7 +15,7 @@ public class Ticket {
 
     private String passengerName;
     private String seatNumber;
-
+    private Double price;
     @ManyToOne
     @JoinColumn(name = "flight_id", nullable = false)
     private Flight flight;
