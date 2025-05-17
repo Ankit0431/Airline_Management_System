@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.9.5-eclipse-temurin-17'
+            image 'maven:3.9.5-eclipse-temurin-21'
             args '-v /root/.m2:/root/.m2'
         }
     }
@@ -9,7 +9,6 @@ pipeline {
     environment {
         EC2_USER = "ubuntu"
         EC2_HOST = "ec2-3-91-214-202.compute-1.amazonaws.com"
-        EC2_KEY = credentials('ec2-key')
         JAR_NAME = "Airline_management_system-0.0.1-SNAPSHOT.jar"
         TARGET_DIR = "airline_app"
     }
@@ -35,9 +34,11 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                script {
+                // Use Jenkins SSH credentials securely
+                sshagent(['ec2-key']) {
                     sh """
-                    scp -o StrictHostKeyChecking=no -i ${EC2_KEY_PATH} target/${JAR_NAME} ${EC2_USER}@${EC2_HOST}:~/${TARGET_DIR}/
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "mkdir -p ~/${TARGET_DIR}"
+                    scp -o StrictHostKeyChecking=no target/${JAR_NAME} ${EC2_USER}@${EC2_HOST}:~/${TARGET_DIR}/
                     """
                 }
             }
@@ -45,15 +46,24 @@ pipeline {
 
         stage('Start Application on EC2') {
             steps {
-                script {
+                sshagent(['ec2-key']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no -i ${EC2_KEY_PATH} ${EC2_USER}@${EC2_HOST} << EOF
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
                         pkill -f '${JAR_NAME}' || true
-                        nohup java -jar ~/${TARGET_DIR}/${JAR_NAME} > ~/airline_app/app.log 2>&1 &
+                        nohup java -jar ~/${TARGET_DIR}/${JAR_NAME} > ~/${TARGET_DIR}/app.log 2>&1 &
                     EOF
                     """
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs.'
         }
     }
 }
