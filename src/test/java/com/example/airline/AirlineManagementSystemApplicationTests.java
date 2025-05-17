@@ -1,4 +1,4 @@
-package com.example.Airline_management_system;
+package com.example.airline;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
